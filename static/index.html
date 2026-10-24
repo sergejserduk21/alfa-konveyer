@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="ru"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Альфа Конвейер — кредитный кабинет</title>
+<style>
+:root{--r:#ef3124;--bg:#f2f3f5;--c:#fff;--t:#1a1a1a;--m:#6b7280;--b:#e5e7eb;--g:#16a34a;--y:#d97706;--bl:#2563eb}
+*{box-sizing:border-box}body{margin:0;font:15px/1.45 system-ui,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--t)}
+header{background:var(--c);border-bottom:1px solid var(--b);padding:12px 20px;display:flex;align-items:center;gap:14px}
+.brand{font-weight:800;font-size:18px}.brand b{color:var(--r)}.sp{flex:1}.m{color:var(--m);font-size:13px}
+.wrap{display:grid;grid-template-columns:340px 1fr;gap:16px;padding:16px 20px;max-width:1300px;margin:0 auto}
+@media(max-width:850px){.wrap{grid-template-columns:1fr}}
+.card{background:var(--c);border:1px solid var(--b);border-radius:12px;padding:16px;margin-bottom:14px}
+h2{margin:0 0 10px;font-size:18px}h3{margin:14px 0 8px;font-size:15px}
+button,.btn{font:inherit;border:0;border-radius:8px;padding:9px 16px;cursor:pointer;background:var(--r);color:#fff;font-weight:600}
+button.sec{background:#fff;color:var(--t);border:1px solid var(--b)}button.ok{background:var(--g)}button.link{background:none;color:var(--m);padding:4px 0;font-weight:400;text-decoration:underline}
+button:disabled{opacity:.5}
+input,select,textarea{font:inherit;width:100%;padding:9px 11px;border:1px solid #cfd3da;border-radius:8px;background:#fff;margin:3px 0 10px}
+label{font-size:13px;color:var(--m)}.row{display:flex;gap:10px}.row>*{flex:1}
+.item{padding:11px 12px;border:1px solid var(--b);border-radius:10px;margin-bottom:8px;cursor:pointer;background:#fff}
+.item:hover{border-color:#bbb}.item.sel{border-color:var(--r);box-shadow:0 0 0 2px #ef312433}
+.bd{display:inline-block;padding:2px 9px;border-radius:99px;font-size:12px;font-weight:600;background:#e0e7ff;color:#3730a3}
+.bd.g{background:#dcfce7;color:#166534}.bd.y{background:#fef3c7;color:#92400e}.bd.r{background:#fee2e2;color:#991b1b}.bd.x{background:#e5e7eb;color:#374151}
+.steps{display:flex;margin:6px 0 16px}.st{flex:1;text-align:center;font-size:12px;color:var(--m);position:relative}
+.st i{display:block;width:22px;height:22px;border-radius:50%;background:var(--b);margin:0 auto 4px;line-height:22px;font-style:normal;color:#fff;font-size:12px}
+.st.d i{background:var(--g)}.st.c i{background:var(--r)}.st.c{color:var(--t);font-weight:600}.st.f i{background:#6b7280}
+.big{font-size:20px;font-weight:700}.hint{background:#fff7ed;border-left:4px solid var(--r);padding:10px 12px;border-radius:6px;margin:10px 0}
+.offer{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:10px 0}.offer div{background:var(--bg);border-radius:8px;padding:10px}
+.offer b{display:block;font-size:17px}.offer span{font-size:12px;color:var(--m)}
+.tl{border-left:2px solid var(--b);margin-left:6px;padding-left:14px}.tl div{margin-bottom:9px;position:relative}
+.tl div:before{content:"";position:absolute;left:-20px;top:6px;width:10px;height:10px;border-radius:50%;background:var(--r)}
+.fac{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px}.fac span:first-child{width:170px}.bar{flex:1;height:8px;background:var(--b);border-radius:4px}.bar i{display:block;height:8px;background:var(--g);border-radius:4px}
+.chips button{margin:0 6px 6px 0;font-size:12px;padding:5px 10px}
+.prod{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:10px}.prod .item{margin:0}.prod .item b{display:block}
+#toast{position:fixed;right:20px;bottom:20px;background:#111;color:#fff;padding:11px 16px;border-radius:8px;display:none;max-width:380px;z-index:9}#toast.bad{background:#b91c1c}
+pre{background:var(--bg);padding:6px 8px;border-radius:6px;font-size:11px;overflow:auto;margin:3px 0 0}
+.login{max-width:380px;margin:60px auto}
+</style></head><body>
+<div id="root"></div><div id="toast"></div>
+<script>
+const $=s=>document.querySelector(s),esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=n=>Number(n).toLocaleString('ru-RU')+' ₽',dt=t=>new Date(t).toLocaleString('ru-RU');
+const S={token:sessionStorage.getItem('t'),user:JSON.parse(sessionStorage.getItem('u')||'null'),sel:null,list:[],cur:null,sig:'',lsig:'',w:{product:'working_capital',inn:'',amount:'',term:12},prods:[],demo:null,stats:null};
+const COL={APPROVED:'g',OFFER_ACCEPTED:'g',SIGNED:'g',DISBURSED:'g',NEEDS_INFO:'y',COUNTER_OFFER:'y',MANUAL_REVIEW:'y',REJECTED:'r',CANCELLED:'x',DRAFT:'x'};
+const NAMES={DRAFT:'Черновик',SUBMITTED:'Отправлена',PROCESSING:'Проверка',NEEDS_INFO:'Нужны данные',MANUAL_REVIEW:'Ручной разбор',COUNTER_OFFER:'Встречное предложение',APPROVED:'Одобрена',REJECTED:'Отказ',OFFER_ACCEPTED:'Оферта принята',SIGNED:'Подписана',DISBURSED:'Выдано',CANCELLED:'Отменена'};
+const STEP={DRAFT:0,CANCELLED:0,SUBMITTED:1,NEEDS_INFO:1,PROCESSING:1,MANUAL_REVIEW:2,COUNTER_OFFER:2,APPROVED:2,REJECTED:2,OFFER_ACCEPTED:3,SIGNED:3,DISBURSED:5};
+const bd=s=>`<span class="bd ${COL[s]||''}">${NAMES[s]||s}</span>`;
+function toast(m,bad){const t=$('#toast');t.textContent=m;t.className=bad?'bad':'';t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',4000)}
+async function api(p,m='GET',b,h={}){
+  const r=await fetch(p,{method:m,headers:{'Content-Type':'application/json',...(S.token?{Authorization:'Bearer '+S.token}:{}),...h},body:b?JSON.stringify(b):undefined});
+  const j=await r.json().catch(()=>({}));
+  if(!r.ok){let d=j.detail;if(Array.isArray(d))d=d.map(x=>x.msg).join('; ');
+    if(d==='Требуется вход'&&S.token){logout();}throw new Error(d||'Ошибка '+r.status)}
+  return j}
+function logout(){sessionStorage.clear();S.token=S.user=null;S.sel=null;clearInterval(S.timer);render()}
+async function login(l,p){try{const r=await api('/api/auth/login','POST',{login:l,password:p});S.token=r.token;S.user=r.user;
+  sessionStorage.setItem('t',r.token);sessionStorage.setItem('u',JSON.stringify(r.user));S.sel=null;render()}catch(e){toast(e.message,1)}}
+
+function render(){
+  if(!S.user){$('#root').innerHTML=`<div class="card login"><div class="brand">Альфа <b>Конвейер</b></div>
+  <p class="m">Кредитный кабинет предпринимателя (демо-прототип). Данные синтетические.</p>
+  <label>Логин</label><input id="lg" value="client"><label>Пароль</label><input id="pw" type="password" value="client123">
+  <button onclick="login($('#lg').value,$('#pw').value)">Войти</button>
+  <h3>Быстрый вход</h3><div class="chips"><button class="sec" onclick="login('client','client123')">Я предприниматель</button>
+  <button class="sec" onclick="login('analyst','analyst123')">Я кредитный аналитик</button></div></div>`;return}
+  const an=S.user.role==='analyst';
+  $('#root').innerHTML=`<header><div class="brand">Альфа <b>Конвейер</b></div><span class="bd ${an?'y':'g'}">${an?'Рабочее место банка':'Кабинет клиента'}</span>
+  <div class="sp"></div><span class="m">${esc(S.user.name)}</span><button class="sec" onclick="logout()">Выйти</button></header>
+  <div class="wrap"><aside id="side"></aside><section id="pane"></section></div>`;
+  Promise.all([api('/api/products'),api('/api/demo-scenarios')]).then(([p,d])=>{S.prods=p;S.demo=d;if(S.sel==='new')wizard()});
+  S.lsig='';S.sig='';refresh();clearInterval(S.timer);S.timer=setInterval(refresh,2000);
+  if(!S.sel&&!an)S.sel=null;pane()}
+async function refresh(){
+  if(!S.user)return;try{
+    S.list=await api('/api/applications');if(S.user.role==='analyst')S.stats=await api('/api/analyst/stats');
+    const s=JSON.stringify([S.list.map(x=>[x.id,x.status,x.version]),S.sel,S.stats]);if(s!==S.lsig){S.lsig=s;side()}
+    if(typeof S.sel==='number'){const a=await api('/api/applications/'+S.sel);const g=a.id+':'+a.version+a.status;
+      S.cur=a;if(g!==S.sig){S.sig=g;pane()}}
+  }catch(e){}}
+function side(){
+  const an=S.user.role==='analyst',el=$('#side');if(!el)return;
+  let h='';
+  if(an&&S.stats){const s=S.stats,b=s.by_status;h+=`<div class="card"><h2>Конвейер</h2><div class="row"><div><b class="big">${s.total}</b><div class="m">заявок</div></div>
+  <div><b class="big">${b.MANUAL_REVIEW||0}</b><div class="m">в очереди</div></div><div><b class="big">${s.approval_rate==null?'—':Math.round(s.approval_rate*100)+'%'}</b><div class="m">одобрение</div></div></div></div>`}
+  else if(!an)h+=`<button style="width:100%;margin-bottom:12px" onclick="S.sel='new';S.sig='';side();wizard()">+ Новая заявка</button>`;
+  h+=`<div class="card"><h2>${an?'Очередь заявок':'Мои заявки'}</h2>`+(S.list.length?S.list.map(a=>`<div class="item ${a.id===S.sel?'sel':''}" onclick="openApp(${a.id})">
+  <b>#${a.id} ${esc(a.company_name)}</b><div class="m">${esc(a.product_name)} · ${fmt(a.amount)} · ${a.term_months} мес.</div>
+  <div style="margin-top:6px">${bd(a.status)}${a.sla_due?` <span class="m">SLA до ${new Date(a.sla_due).toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'})}</span>`:''}</div></div>`).join(''):'<p class="m">Заявок пока нет.</p>')+'</div>';
+  el.innerHTML=h}
+function openApp(id){S.sel=id;S.sig='';S.lsig='';S.cur=null;$('#pane').innerHTML='<p class="m">Загрузка…</p>';refresh()}
+function pane(){const p=$('#pane');if(!p)return;
+  if(S.sel==='new')return wizard();
+  if(!S.cur||S.cur.id!==S.sel){p.innerHTML=`<div class="card"><h2>${S.user.role==='analyst'?'Выберите заявку из очереди':'Добро пожаловать!'}</h2><p class="m">${S.user.role==='analyst'?'Заявки на ручной разбор подняты наверх.':'Нажмите «Новая заявка», чтобы получить финансирование для бизнеса.'}</p></div>`;return}
+  p.innerHTML=S.user.role==='analyst'?analystView(S.cur):clientView(S.cur)}
+
+/* ---------- клиент ---------- */
+function offerBox(o){return o?`<div class="offer"><div><b>${fmt(o.amount)}</b><span>сумма</span></div><div><b>${o.term_months} мес.</b><span>срок</span></div><div><b>${o.rate}%</b><span>ставка годовых</span></div><div><b>${fmt(o.monthly_payment)}</b><span>платёж в месяц</span></div></div>`:''}
+function steps(a){const n=['Заявка','Проверки','Решение','Оферта','Выдача'],i=STEP[a.status]??0,f=a.status==='REJECTED'||a.status==='CANCELLED';
+  return `<div class="steps">${n.map((x,k)=>`<div class="st ${k<i?'d':k===i?(f?'f':'c'):''}"><i>${k<i?'✓':k+1}</i>${x}</div>`).join('')}</div>`}
+function clientView(a){
+  const d=a.decision||{},na=a.next_action;let act='';
+  if(na==='submit')act=`<button onclick="act('submit')">Отправить заявку в банк</button>`;
+  if(na==='provide_info')act=`<h3>Что нужно добавить</h3>`+(d.requested||[]).map(r=>r.field==='note'?`<div class="hint">${esc(r.label)}</div><label>Ваш комментарий</label><textarea data-f="note"></textarea>`:`<label>${esc(r.label)}</label><input type="number" data-f="${r.field}">`).join('')+`<button onclick="act('info')">Отправить в банк</button>`;
+  if(na==='respond')act=`<button class="ok" onclick="act('respond',true)">Принять предложение</button> <button class="sec" onclick="act('respond',false)">Отклонить</button>`;
+  if(na==='sign')act=`<button class="ok" onclick="act('sign')">Подписать документы (симуляция)</button>`;
+  const canCancel=['DRAFT','SUBMITTED','NEEDS_INFO','COUNTER_OFFER','APPROVED','OFFER_ACCEPTED'].includes(a.status);
+  return `<div class="card"><div class="m">Заявка #${a.id} · ${esc(a.company_name)} · ИНН ${a.inn}</div>${steps(a)}
+  <div class="big">${esc(a.status_title)}</div><div class="hint">${esc(a.status_hint)}</div>
+  <div class="m">${esc(a.product_name)} · запрошено ${fmt(a.amount)} на ${a.term_months} мес.</div>
+  ${d.offer&&['APPROVED','COUNTER_OFFER','OFFER_ACCEPTED','SIGNED','DISBURSED'].includes(a.status)?`<h3>${a.status==='COUNTER_OFFER'?'Предложение банка':'Условия'}</h3>${offerBox(d.offer)}`:''}
+  ${d.manual?`<div class="m">Комментарий специалиста: ${esc(d.manual.comment)}</div>`:''}
+  ${(d.reasons||[]).length&&['REJECTED','COUNTER_OFFER'].includes(a.status)?`<h3>Причины</h3><ul>${d.reasons.map(r=>`<li>${esc(r)}</li>`).join('')}</ul>`:''}
+  <div style="margin-top:12px">${act}</div>${canCancel?`<div><button class="link" onclick="act('cancel')">Отменить заявку</button></div>`:''}</div>
+  <div class="card"><h2>История</h2><div class="tl">${a.events.slice().reverse().map(e=>`<div>${esc(e.label)}<div class="m">${dt(e.ts)}</div></div>`).join('')}</div></div>`}
+function wizard(){
+  const w=S.w,pr=S.prods,P={working_capital:['Пополнить оборотные средства','Закупки, зарплаты, текущие расходы'],equipment:['Купить оборудование','Станки, техника, транспорт'],overdraft:['Закрыть кассовый разрыв','Короткие деньги на счёт']};
+  const mx=(pr.find(x=>x.code===w.product)||{}).max_term||12;
+  $('#pane').innerHTML=`<div class="card"><h2>Новая заявка</h2><label>Для чего нужны деньги?</label><div class="prod">${Object.entries(P).map(([k,v])=>`<div class="item ${w.product===k?'sel':''}" onclick="S.w.product='${k}';wsave();wizard()"><b>${v[0]}</b><span class="m">${v[1]}</span></div>`).join('')}</div>
+  <label>ИНН компании</label><input id="w_inn" value="${esc(w.inn)}" oninput="S.w.inn=this.value" onblur="autofill()" placeholder="10 или 12 цифр"><div id="co" class="m"></div>
+  <div class="row"><div><label>Сумма, ₽</label><input id="w_a" type="number" value="${esc(w.amount)}" oninput="S.w.amount=this.value"></div>
+  <div><label>Срок, мес. (до ${mx})</label><input id="w_t" type="number" value="${esc(w.term)}" oninput="S.w.term=this.value"></div></div>
+  <button onclick="createApp()">Создать и отправить в банк</button></div>
+  ${S.demo?`<div class="card"><h3>Демо-данные для проверки</h3><div class="m">Выберите сценарий — поля заполнятся автоматически.</div><div class="chips" style="margin-top:8px">${S.demo.scenarios.map(s=>`<button class="sec" title="${esc(s.expect)}" onclick='fill(${JSON.stringify(s)})'>${s.n}. ${esc(S.demo.companies[s.inn])}</button>`).join('')}</div>
+  <ul class="m">${S.demo.scenarios.map(s=>`<li>${s.n}: ${esc(s.expect)}</li>`).join('')}</ul></div>`:''}`;
+  if(w.inn.length>=10)autofill()}
+function wsave(){}
+function fill(s){S.w={product:s.product,inn:s.inn,amount:s.amount,term:s.term_months};wizard()}
+async function autofill(){const v=S.w.inn.trim(),el=$('#co');if(!el||v.length<10)return;try{const c=await api('/api/company/'+v);el.innerHTML=`✓ <b>${esc(c.name)}</b><br>${esc(c.okved)} · руководитель: ${esc(c.director)}<br>${esc(c.address)} <i>(данные из реестров, мок)</i>`}catch(e){el.innerHTML='<span style="color:#b91c1c">'+esc(e.message)+'</span>'}}
+async function createApp(){const w=S.w;try{
+  let a=await api('/api/applications','POST',{inn:w.inn.trim(),product:w.product,amount:+w.amount,term_months:+w.term},{'Idempotency-Key':crypto.randomUUID()});
+  a=await api(`/api/applications/${a.id}/submit`,'POST',null,{'If-Match':a.version});
+  S.w={product:w.product,inn:'',amount:'',term:12};S.cur=a;S.sel=a.id;S.sig='';S.lsig='';refresh();toast('Заявка отправлена')}catch(e){toast(e.message,1)}}
+async function act(kind,arg){const a=S.cur,H={'If-Match':a.version},u=`/api/applications/${a.id}/`;try{
+  let r;
+  if(kind==='submit')r=await api(u+'submit','POST',null,H);
+  if(kind==='sign')r=await api(u+'sign','POST',null,H);
+  if(kind==='cancel'){if(!confirm('Отменить заявку?'))return;r=await api(u+'cancel','POST',null,H)}
+  if(kind==='respond')r=await api(u+'respond','POST',{accept:arg},H);
+  if(kind==='info'){const b={};document.querySelectorAll('[data-f]').forEach(i=>{if(i.value!=='')b[i.dataset.f]=i.type==='number'?+i.value:i.value});r=await api(u+'info','POST',b,H)}
+  S.cur=r;S.sig='';S.lsig='';refresh();toast('Готово')}catch(e){toast(e.message,1);S.sig=''}}
+
+/* ---------- аналитик ---------- */
+const MAXF={'Возраст компании':15,'Динамика выручки':20,'Кредитная история (БКИ)':25,'Просрочки':10,'Долговая нагрузка':15,'Риск отрасли (ОКВЭД)':10,'Залог':5};
+function analystView(a){const d=a.decision||{};
+  const form=a.status==='MANUAL_REVIEW'?`<div class="card"><h2>Решение специалиста</h2><label>Действие</label>
+  <select id="an_act" onchange="$('#an_c').style.display=this.value==='counter'?'block':'none'"><option value="approve">Одобрить на условиях системы</option><option value="counter">Предложить другие условия</option><option value="request_info">Запросить данные у клиента</option><option value="reject">Отказать</option></select>
+  <div id="an_c" style="display:none"><div class="row"><div><label>Сумма</label><input id="o_a" type="number" value="${d.offer?d.offer.amount:''}"></div><div><label>Срок</label><input id="o_t" type="number" value="${d.offer?d.offer.term_months:''}"></div></div>
+  <div class="row"><div><label>Ставка, %</label><input id="o_r" type="number" step="0.1" value="${d.offer?d.offer.rate:''}"></div><div><label>Платёж/мес</label><input id="o_p" type="number" value="${d.offer?d.offer.monthly_payment:''}"></div></div></div>
+  <label>Комментарий (обязателен)</label><textarea id="an_cm" rows="3"></textarea><button onclick="decide()">Принять решение</button></div>`:'';
+  return `<div class="card"><div class="m">Заявка #${a.id} · ИНН ${a.inn}</div><h2>${esc(a.company_name)} ${bd(a.status)}</h2>
+  <div>${esc(a.product_name)} · запрошено <b>${fmt(a.amount)}</b> на ${a.term_months} мес.</div>
+  ${d.grade?`<h3>Скоринг: ${d.score} баллов, грейд <span class="bd ${d.grade==='A'?'g':d.grade==='B'?'y':'r'}">${d.grade}</span></h3>${(d.factors||[]).map(f=>`<div class="fac"><span>${esc(f[0])}</span><div class="bar"><i style="width:${Math.round(100*f[1]/(MAXF[f[0]]||20))}%"></i></div><b>${f[1]}</b></div>`).join('')}`:''}
+  ${(d.reasons||[]).length?`<h3>Reason codes</h3><ul>${d.reasons.map(r=>`<li><code>${esc(r[0])}</code> ${esc(r[1])}</li>`).join('')}</ul>`:''}
+  ${d.offer?`<h3>Условия, рассчитанные системой</h3>${offerBox(d.offer)}`:''}
+  ${d.manual?`<div class="m">Решение: ${esc(d.manual.action)} · ${esc(d.manual.by)} · «${esc(d.manual.comment)}»</div>`:''}</div>${form}
+  <div class="card"><h2>Журнал событий (аудит)</h2><div class="tl">${a.events.slice().reverse().map(e=>`<div>${esc(e.label)} <span class="m">· ${esc(e.actor)} ${e.from?esc(e.from)+' → ':''}${esc(e.to||'')}</span><div class="m">${dt(e.ts)}</div>${e.payload&&Object.keys(e.payload).length?`<pre>${esc(JSON.stringify(e.payload))}</pre>`:''}</div>`).join('')}</div></div>`}
+async function decide(){const a=S.cur,act=$('#an_act').value;const b={action:act,comment:$('#an_cm').value};
+  if(act==='counter')b.offer={amount:+$('#o_a').value,term_months:+$('#o_t').value,rate:+$('#o_r').value,monthly_payment:+$('#o_p').value};
+  try{S.cur=await api(`/api/applications/${a.id}/analyst-decision`,'POST',b,{'If-Match':a.version});S.sig='';S.lsig='';refresh();toast('Решение сохранено')}catch(e){toast(e.message,1)}}
+render();
+</script></body></html>
