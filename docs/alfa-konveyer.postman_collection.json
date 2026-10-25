@@ -1,0 +1,578 @@
+{
+  "info": {
+    "name": "Альфа Конвейер",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Порядок: Login (клиент) → Создать заявку → Отправить → ... Для действий аналитика сначала Login (аналитик)."
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "app_id",
+      "value": ""
+    },
+    {
+      "key": "version",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/health",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Login: клиент",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"login\": \"client\",\n  \"password\": \"client123\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('token',pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Login: аналитик",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/auth/login",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "auth",
+            "login"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"login\": \"analyst\",\n  \"password\": \"analyst123\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.collectionVariables.set('token',pm.response.json().token);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Продукты",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/products",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "products"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Демо-сценарии",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/demo-scenarios",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "demo-scenarios"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Допустимые переходы",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/state-machine",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "state-machine"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Компания по ИНН (мок)",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/company/7701234501",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "company",
+            "7701234501"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Создать заявку (сценарий 1)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Idempotency-Key",
+            "value": "{{$guid}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/applications",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "applications"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"inn\": \"7701234501\",\n  \"product\": \"working_capital\",\n  \"amount\": 2000000,\n  \"term_months\": 12\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const j=pm.response.json();pm.collectionVariables.set('app_id',j.id);pm.collectionVariables.set('version',j.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Отправить заявку",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{version}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/applications/{{app_id}}/submit",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "applications",
+            "{{app_id}}",
+            "submit"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const j=pm.response.json();if(j.version)pm.collectionVariables.set('version',j.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Список заявок",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/applications",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "applications"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Заявка по id",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/applications/{{app_id}}",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "applications",
+            "{{app_id}}"
+          ]
+        }
+      }
+    },
+    {
+      "name": "Дозапрос данных (сценарий 3)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{version}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/applications/{{app_id}}/info",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "applications",
+            "{{app_id}}",
+            "info"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"annual_revenue\": 18000000,\n  \"revenue_trend_pct\": 12\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const j=pm.response.json();if(j.version)pm.collectionVariables.set('version',j.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Принять / отклонить оферту",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{version}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/applications/{{app_id}}/respond",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "applications",
+            "{{app_id}}",
+            "respond"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"accept\": true\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const j=pm.response.json();if(j.version)pm.collectionVariables.set('version',j.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Подписать и получить (симуляция)",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{version}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/applications/{{app_id}}/sign",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "applications",
+            "{{app_id}}",
+            "sign"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const j=pm.response.json();if(j.version)pm.collectionVariables.set('version',j.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Отменить заявку",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{version}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/applications/{{app_id}}/cancel",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "applications",
+            "{{app_id}}",
+            "cancel"
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const j=pm.response.json();if(j.version)pm.collectionVariables.set('version',j.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Аналитик: решение",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "If-Match",
+            "value": "{{version}}"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/applications/{{app_id}}/analyst-decision",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "applications",
+            "{{app_id}}",
+            "analyst-decision"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"action\": \"approve\",\n  \"comment\": \"Стабильный оборот, одобряю\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const j=pm.response.json();if(j.version)pm.collectionVariables.set('version',j.version);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Аналитик: статистика",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{base_url}}/api/analyst/stats",
+          "host": [
+            "{{base_url}}"
+          ],
+          "path": [
+            "api",
+            "analyst",
+            "stats"
+          ]
+        }
+      }
+    }
+  ]
+}
